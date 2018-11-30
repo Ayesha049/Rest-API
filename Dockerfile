@@ -1,10 +1,10 @@
-FROM golang:1.11
+FROM golang:1.11 as builder
+RUN mkdir -p /go/src/github.com/Ayesha049/Rest-API
+WORKDIR /go/src/github.com/Ayesha049/Rest-API
+COPY restapi.go .
+RUN go get github.com/gorilla/mux
+RUN CGO_ENABLED=0 GOOS=linux go build -o server .
 
-WORKDIR ~/Desktop/rest
-COPY .git     .
-COPY dockertest.go   .
-
-RUN GIT_COMMIT=$(git rev-list -1 HEAD) && \
-  go build -ldflags "-X main.GitCommit=$GIT_COMMIT"
-
-CMD ["./rest"]
+FROM busybox
+COPY --from=builder /go/src/github.com/Ayesha049/Rest-API/server /usr/bin/server
+ENTRYPOINT ["server"]
