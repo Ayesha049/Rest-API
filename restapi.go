@@ -3,13 +3,10 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"github.com/gorilla/mux"
 )
-
-
 
 type Movie struct {
 	ID        string  `json:"id"`
@@ -18,7 +15,26 @@ type Movie struct {
 }
 
 var movies []Movie
+var idCount = 2
 
+func ReplaceMovie(id string, mv Movie){
+	for index, item := range movies {
+		if item.ID == id {
+			movies = append(movies[:index], movies[index+1:]...)
+			movies = append(movies, mv)
+			return
+		}
+	}
+}
+
+func DeleteMv(id string){
+	for index, item := range movies {
+		if item.ID == id {
+			movies = append(movies[:index], movies[index+1:]...)
+			return
+		}
+	}
+}
 
 
 
@@ -34,9 +50,10 @@ func postMovie(w http.ResponseWriter, r *http.Request) {
 	var movie Movie
 	err := json.NewDecoder(r.Body).Decode(&movie)
 	if err!= nil{
-	log.Fatal(err)
+		log.Fatal(err)
 	}
-	movie.ID = strconv.Itoa(rand.Intn(100)) // Mock ID - not safe
+	idCount = idCount+1
+	movie.ID = strconv.Itoa(idCount) 
 	movies = append(movies, movie)
 	json.NewEncoder(w).Encode(movie)
 }
@@ -45,32 +62,28 @@ func postMovie(w http.ResponseWriter, r *http.Request) {
 func putMovie(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	for index, item := range movies {
-		if item.ID == params["id"] {
-			movies = append(movies[:index], movies[index+1:]...)
-			var movie Movie
-			err := json.NewDecoder(r.Body).Decode(&movie)
-			if err!= nil{
-			log.Fatal(err)
-			}
-			movie.ID = params["id"]
-			movies = append(movies, movie)
-			json.NewEncoder(w).Encode(movie)
-			return
-		}
+	var movie Movie
+	err := json.NewDecoder(r.Body).Decode(&movie)
+	if err!= nil{
+		log.Fatal(err)
 	}
+	movie.ID = params["id"]
+	ReplaceMovie(movie.ID,movie)
+	json.NewEncoder(w).Encode(movie)
+
 }
 
 
 func deleteMovie(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	for index, item := range movies {
-		if item.ID == params["id"] {
-			movies = append(movies[:index], movies[index+1:]...)
-			break
-		}
-	}
+	DeleteMv(params["id"])
+	json.NewEncoder(w).Encode(movies)
+}
+
+func deleteAllMovie(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	movies = movies[:0]
 	json.NewEncoder(w).Encode(movies)
 }
 
@@ -87,6 +100,7 @@ func main() {
 
 	
 	r.HandleFunc("/movies", getMovie).Methods("GET")
+	r.HandleFunc("/movies", deleteAllMovie).Methods("DELETE")
 	r.HandleFunc("/movies", postMovie).Methods("POST")
 	r.HandleFunc("/movies/{id}", putMovie).Methods("PUT")
 	r.HandleFunc("/movies/{id}", deleteMovie).Methods("DELETE")
