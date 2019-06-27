@@ -27,7 +27,7 @@ type Movie struct {
 
 
 var movies []Movie
-var idCount = 0
+var idCount = 1
 
 func ReplaceMovie(id string, mv Movie){
 	for index, item := range movies {
@@ -137,7 +137,14 @@ func main() {
 	// router initialization
 	r := mux.NewRouter()
 
-	
+	var act []ACT
+
+	act = append(act, ACT{ First : "Leo", Last : "DeCaprio" } )
+	act = append(act, ACT{ First : "abc", Last : "def" } )
+
+	movies = append(movies, Movie{ ID : "1", Name : "Titanic", Actor : act } )
+
+
 	r.HandleFunc("/movies", getMovie).Methods("GET")
 	r.HandleFunc("/movies/{id}/actors", getAllActors).Methods("GET")
 	r.HandleFunc("/movies", deleteAllMovie).Methods("DELETE")
